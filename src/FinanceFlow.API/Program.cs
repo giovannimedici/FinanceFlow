@@ -1,37 +1,85 @@
 using Confluent.Kafka;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Serilog;
+using Serilog.Context;
+using Serilog.Events;
+using Serilog.Formatting.Json;
 
-var builder = WebApplication.CreateBuilder(args);
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console(new JsonFormatter(renderMessage: true))
+    .CreateBootstrapLogger();
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("FinanceFlow")!)
-    .AddKafka(new ProducerConfig
+try
+{
+    var builder = WebApplication.CreateBuilder(args);
+
+    builder.Host.UseSerilog((context, _, configuration) =>
     {
-        BootstrapServers = builder.Configuration["Kafka:BootstrapServers"]
+        var defaultLevel = ParseLogLevel(context.Configuration["Logging:LogLevel:Default"]);
+        var aspNetCoreLevel = ParseLogLevel(
+            context.Configuration["Logging:LogLevel:Microsoft.AspNetCore"],
+            LogEventLevel.Warning);
+
+        configuration
+            .MinimumLevel.Is(defaultLevel)
+            .MinimumLevel.Override("Microsoft.AspNetCore", aspNetCoreLevel)
+            .Enrich.FromLogContext()
+            .WriteTo.Console(new JsonFormatter(renderMessage: true));
     });
 
-var app = builder.Build();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen();
+    builder.Services.AddHealthChecks()
+        .AddNpgSql(builder.Configuration.GetConnectionString("FinanceFlow")!)
+        .AddKafka(new ProducerConfig
+        {
+            BootstrapServers = builder.Configuration["Kafka:BootstrapServers"]
+        });
 
+    var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+    app.Use(async (context, next) =>
+    {
+        using (LogContext.PushProperty("requestId", context.TraceIdentifier))
+        {
+            await next(context);
+        }
+    });
+
+    app.UseSerilogRequestLogging(options =>
+    {
+        options.EnrichDiagnosticContext = (diagnosticContext, httpContext) =>
+        {
+            diagnosticContext.Set("requestId", httpContext.TraceIdentifier);
+        };
+    });
+
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
+
+    app.UseHttpsRedirection();
+
+    app.MapHealthChecks("/health", new HealthCheckOptions
+    {
+        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    });
+
+    Log.Information("FinanceFlow API starting");
+    app.Run();
+}
+catch (Exception ex)
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    Log.Fatal(ex, "Application terminated unexpectedly");
+    throw;
+}
+finally
+{
+    Log.CloseAndFlush();
 }
 
-app.UseHttpsRedirection();
-
-
-app.MapHealthChecks("/health", new HealthCheckOptions
-{
-    ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
-});
-
-app.Run();
-
+static LogEventLevel ParseLogLevel(string? level, LogEventLevel fallback = LogEventLevel.Information) =>
+    Enum.TryParse<LogEventLevel>(level, ignoreCase: true, out var parsed) ? parsed : fallback;
