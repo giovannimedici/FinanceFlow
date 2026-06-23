@@ -1,10 +1,12 @@
 using Confluent.Kafka;
+using FinanceFlow.API.Extensions;
 using HealthChecks.UI.Client;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Serilog;
 using Serilog.Context;
 using Serilog.Events;
 using Serilog.Formatting.Json;
+using FinanceFlow.Infrastructure;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(new JsonFormatter(renderMessage: true))
@@ -30,6 +32,7 @@ try
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+    builder.Services.AddInfrastructure(builder.Configuration);
     builder.Services.AddHealthChecks()
         .AddNpgSql(builder.Configuration.GetConnectionString("FinanceFlow")!)
         .AddKafka(new ProducerConfig
@@ -37,7 +40,10 @@ try
             BootstrapServers = builder.Configuration["Kafka:BootstrapServers"]
         });
 
+
     var app = builder.Build();
+
+    await app.ApplyMigrationsAsync();
 
     app.Use(async (context, next) =>
     {
