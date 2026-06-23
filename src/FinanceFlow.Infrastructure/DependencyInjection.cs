@@ -1,0 +1,29 @@
+using FinanceFlow.Application.Interfaces;
+using FinanceFlow.Infrastructure.Data;
+using FinanceFlow.Infrastructure.Data.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace FinanceFlow.Infrastructure;
+
+public static class DependencyInjection
+{
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration)
+    {
+        var connStr = configuration
+            .GetConnectionString("FinanceFlow") 
+            ?? throw new InvalidOperationException(
+                "Connection string 'FinanceFlow' not found.");
+
+        services.AddDbContext<FinanceFlowDbContext>(opts =>
+            opts.UseNpgsql(connStr)
+                .UseSnakeCaseNamingConvention());
+
+        services.AddScoped<IAccountRepository, AccountRepository>();
+
+        return services;
+    }
+}
