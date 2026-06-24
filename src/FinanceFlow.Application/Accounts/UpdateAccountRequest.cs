@@ -1,0 +1,1 @@
+public record UpdateAccountStatusRequest(string Status);
