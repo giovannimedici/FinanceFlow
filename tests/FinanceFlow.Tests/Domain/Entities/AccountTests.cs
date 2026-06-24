@@ -214,5 +214,31 @@ public class AccountTests
            .WithMessage("Account is already closed");
     }
 
+    [Fact]
+    public void Close_ActiveAccount_SetsStatusToClosed()
+    {
+        // Arrange
+        var account = Account.Create(_validOwnerName, _validDocumentNumber);
+
+        // Act
+        account.Close();
+
+        // Assert
+        account.Status.Should().Be(AccountStatus.Closed);
+    }
+
+    [Fact]
+    public void Activate_ClosedAccount_ThrowsDomainException()
+    {
+        // Arrange
+        var account = Account.Create(_validOwnerName, _validDocumentNumber);
+        account.Close();
+
+        // Act
+        Action act = () => account.Activate();
+
+        // Assert
+        act.Should().Throw<DomainException>();
+    }
     #endregion
 }
