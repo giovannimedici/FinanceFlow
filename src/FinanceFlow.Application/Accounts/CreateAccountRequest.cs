@@ -1,0 +1,1 @@
+public record CreateAccountRequest(string OwnerName, string DocumentNumber);

@@ -18,8 +18,8 @@ public class AccountRepository(FinanceFlowDbContext db) : IAccountRepository
         db.Accounts.FirstOrDefaultAsync(a => a.DocumentNumber == doc, ct);
 
     public async Task<IReadOnlyList<Account>> GetAllAsync(
-        AccountStatus? status,
-        CancellationToken ct)
+        AccountStatus? status = null,
+        CancellationToken ct = default)
     {
         var query = db.Accounts.AsQueryable();
 

@@ -7,6 +7,8 @@ using Serilog.Context;
 using Serilog.Events;
 using Serilog.Formatting.Json;
 using FinanceFlow.Infrastructure;
+using FinanceFlow.Application;
+using Microsoft.OpenApi.Models;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console(new JsonFormatter(renderMessage: true))
@@ -31,8 +33,18 @@ try
     });
 
     builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
+    builder.Services.AddEndpointsApiExplorer();
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo
+        {
+            Title = "FinanceFlow API",
+            Version = "v1",
+            Description = "Financial transaction processing API — event-driven with Kafka"
+        });
+    });
     builder.Services.AddInfrastructure(builder.Configuration);
+    builder.Services.AddApplication();
     builder.Services.AddHealthChecks()
         .AddNpgSql(builder.Configuration.GetConnectionString("FinanceFlow")!)
         .AddKafka(new ProducerConfig
@@ -69,10 +81,14 @@ try
 
     app.UseHttpsRedirection();
 
+    app.UseMiddleware<ExceptionHandlingMiddleware>();
+
     app.MapHealthChecks("/health", new HealthCheckOptions
     {
         ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
     });
+
+    app.MapAccountEndpoints();
 
     Log.Information("FinanceFlow API starting");
     app.Run();
