@@ -1,0 +1,1 @@
+public record DepositRequest(decimal Amount, string? Description);
