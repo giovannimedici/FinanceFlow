@@ -89,6 +89,7 @@ try
     });
 
     app.MapAccountEndpoints();
+    app.MapTransactionEndpoints();
 
     Log.Information("FinanceFlow API starting");
     app.Run();

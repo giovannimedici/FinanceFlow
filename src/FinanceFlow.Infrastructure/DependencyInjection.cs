@@ -1,6 +1,9 @@
+using FinanceFlow.Application.Abstractions;
 using FinanceFlow.Application.Interfaces;
 using FinanceFlow.Infrastructure.Data;
 using FinanceFlow.Infrastructure.Data.Repositories;
+using FinanceFlow.Infrastructure.Messaging;
+using FinanceFlow.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +26,9 @@ public static class DependencyInjection
                 .UseSnakeCaseNamingConvention());
 
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
 
         return services;
     }

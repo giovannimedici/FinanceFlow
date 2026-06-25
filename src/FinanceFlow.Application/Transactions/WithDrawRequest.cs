@@ -1,0 +1,1 @@
+public record WithdrawRequest(decimal Amount, string? Description);
