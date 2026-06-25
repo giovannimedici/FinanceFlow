@@ -1,1 +1,1 @@
-public record TransactionResponse(Guid TransactionId, decimal NewBalance);
+public record TransactionResponse(Guid TransactionId, decimal amount, decimal NewBalance);

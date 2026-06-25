@@ -6,8 +6,6 @@ using FinanceFlow.Domain.Enums;
 using FinanceFlow.Domain.Exceptions;
 using Microsoft.Extensions.Logging;
 
-
-
 namespace FinanceFlow.Application.Services;
 
 public sealed class TransactionService : ITransactionService
@@ -60,9 +58,9 @@ public sealed class TransactionService : ITransactionService
                 "Deposit committed. {TransactionId} {AccountId} {Amount}",
                 transaction.Id, accountId, request.Amount);
 
-            await PublishEventAsync(transaction, ct);
+            // await PublishEventAsync(transaction, ct);
 
-            return new TransactionResponse(transaction.Id, account.Balance);
+            return new TransactionResponse(transaction.Id, transaction.Amount, account.Balance);
         }
         catch (DomainException)
         {
@@ -104,9 +102,9 @@ public sealed class TransactionService : ITransactionService
                 "Withdrawal committed. {TransactionId} {AccountId} {Amount}",
                 transaction.Id, accountId, request.Amount);
 
-            await PublishEventAsync(transaction, ct);
+            // await PublishEventAsync(transaction, ct);
 
-            return new TransactionResponse(transaction.Id, account.Balance);
+            return new TransactionResponse(transaction.Id, transaction.Amount, account.Balance);
         }
         catch (DomainException)
         {
@@ -121,6 +119,16 @@ public sealed class TransactionService : ITransactionService
         }
     }
 
+    public async Task<(IReadOnlyList<TransactionResponse> Data, int TotalCount)> GetTransactionsByAccountIdAsync(
+        Guid accountId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var account = await _accounts.GetByIdAsync(accountId, ct)
+            ?? throw new NotFoundException($"Account {accountId} not found.");
+
+        var transactions = await _transactions.GetByAccountIdAsync(accountId, page, pageSize, ct);
+
+        return (transactions.Data.Select(MapToResponse).ToList(), transactions.TotalCount);
+    }
     private async Task PublishEventAsync(Transaction transaction, CancellationToken ct)
     {
         try
@@ -153,4 +161,6 @@ public sealed class TransactionService : ITransactionService
                 transaction.Id);
         }
     }
+    private static TransactionResponse MapToResponse(Transaction t) =>
+        new(t.Id, t.Amount, t.BalanceAfter);
 }

@@ -19,5 +19,13 @@ public static class TransactionEndpoints
         })
         .WithName("Withdraw")
         .WithTags("Transactions");
+
+        app.MapGet("/api/accounts/{accountId:guid}/transactions", async (Guid accountId, int page, int pageSize, ITransactionService transactionService, CancellationToken ct) =>
+        {
+            var (data, totalCount) = await transactionService.GetTransactionsByAccountIdAsync(accountId, page, pageSize, ct);
+            return Results.Ok(new { Data = data, TotalCount = totalCount });
+        })
+        .WithName("GetTransactionsByAccountId")
+        .WithTags("Transactions");
     }
 }
