@@ -24,4 +24,6 @@ public interface IAccountRepository
     Task UpdateAsync(
         Account account,
         CancellationToken ct = default);
+
+    Task<Dictionary<Guid, Account>> SelectForUpdate(Guid firstId, Guid secondId, CancellationToken ct);
 }

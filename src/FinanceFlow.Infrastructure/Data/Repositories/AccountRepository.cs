@@ -2,6 +2,7 @@ using FinanceFlow.Application.Interfaces;
 using FinanceFlow.Domain.Entities;
 using FinanceFlow.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace FinanceFlow.Infrastructure.Data.Repositories;
 
@@ -45,5 +46,14 @@ public class AccountRepository(FinanceFlowDbContext db) : IAccountRepository
     {
         db.Accounts.Update(account);
         await db.SaveChangesAsync(ct);
+    }
+
+    public async Task<Dictionary<Guid, Account>> SelectForUpdate(Guid firstId, Guid secondId, CancellationToken ct)
+    {
+        return await db.Accounts
+                        .FromSqlRaw(
+                            "SELECT * FROM accounts WHERE id = ANY(@ids) FOR UPDATE",
+                            new NpgsqlParameter("ids", new[] { firstId, secondId }))
+                            .ToDictionaryAsync(a => a.Id, ct);
     }
 }

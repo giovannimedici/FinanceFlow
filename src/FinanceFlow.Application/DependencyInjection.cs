@@ -13,6 +13,7 @@ public static class DependencyInjection
     {
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<ITransferService, TransferService>();
         services.AddValidatorsFromAssemblyContaining<CreateAccountRequestValidator>();
 
         return services;
