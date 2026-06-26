@@ -1,4 +1,5 @@
 using FinanceFlow.Application.Services.Interfaces;
+using FluentValidation;
 
 public static class TransactionEndpoints
 {
@@ -9,6 +10,7 @@ public static class TransactionEndpoints
             var response = await transactionService.DepositAsync(accountId, request, ct);
             return Results.Ok(response);
         })
+        .WithSummary("Deposit an amount into the specified account")
         .WithName("Deposit")
         .WithTags("Transactions");
 
@@ -17,6 +19,7 @@ public static class TransactionEndpoints
             var response = await transactionService.WithdrawAsync(accountId, request, ct);
             return Results.Ok(response);
         })
+        .WithSummary("Withdraw an amount from the specified account")
         .WithName("Withdraw")
         .WithTags("Transactions");
 
@@ -25,7 +28,25 @@ public static class TransactionEndpoints
             var (data, totalCount) = await transactionService.GetTransactionsByAccountIdAsync(accountId, page, pageSize, ct);
             return Results.Ok(new { Data = data, TotalCount = totalCount });
         })
+        .WithSummary("Get transactions for the specified account with pagination")
         .WithName("GetTransactionsByAccountId")
+        .WithTags("Transactions");
+
+        app.MapPost("/api/transfers", async (
+        TransferRequest request,
+        IValidator<TransferRequest> validator,
+        ITransferService transferService,
+        CancellationToken ct) =>
+        {
+            var validation = await validator.ValidateAsync(request, ct);
+            if (!validation.IsValid)
+                return Results.ValidationProblem(validation.ToDictionary());
+
+            var result = await transferService.TransferAsync(request, ct);
+            return Results.Ok(result);
+        })
+        .WithSummary("Transfer an amount from one account to another")
+        .WithName("Transfer between accounts")
         .WithTags("Transactions");
     }
 }

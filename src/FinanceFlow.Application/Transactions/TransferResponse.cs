@@ -1,0 +1,1 @@
+public record TransferResponse(Guid TransferId, decimal SourceBalance, decimal DestinationBalance);
