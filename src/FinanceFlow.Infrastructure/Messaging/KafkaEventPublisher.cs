@@ -16,12 +16,16 @@ public sealed class KafkaEventPublisher : IEventPublisher, IDisposable
     {
         _logger = logger;
 
+        var bootstrapServers = configuration["Kafka:BootstrapServers"]
+            ?? throw new InvalidOperationException(
+                "Kafka bootstrap servers not configured. Set Kafka:BootstrapServers.");
+
         var config = new ProducerConfig
         {
-            BootstrapServers                    = configuration["Kafka__BootstrapServers"],
-            Acks                                = Acks.All,
-            EnableIdempotence                   = true,
-            MaxInFlight                         = 5,
+            BootstrapServers  = bootstrapServers,
+            Acks              = Acks.All,
+            EnableIdempotence = true,
+            MaxInFlight       = 5,
         };
 
         _producer = new ProducerBuilder<string, string>(config).Build();

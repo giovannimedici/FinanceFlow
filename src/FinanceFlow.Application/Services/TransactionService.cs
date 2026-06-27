@@ -1,4 +1,5 @@
 using FinanceFlow.Application.Abstractions;
+using FinanceFlow.Application.Events;
 using FinanceFlow.Application.Interfaces;
 using FinanceFlow.Application.Services.Interfaces;
 using FinanceFlow.Domain.Entities;
@@ -58,7 +59,7 @@ public sealed class TransactionService : ITransactionService
                 "Deposit committed. {TransactionId} {AccountId} {Amount}",
                 transaction.Id, accountId, request.Amount);
 
-            // await PublishEventAsync(transaction, ct);
+            await PublishEventAsync(transaction, ct);
 
             return new TransactionResponse(transaction.Id, transaction.Amount, account.Balance);
         }
@@ -102,7 +103,7 @@ public sealed class TransactionService : ITransactionService
                 "Withdrawal committed. {TransactionId} {AccountId} {Amount}",
                 transaction.Id, accountId, request.Amount);
 
-            // await PublishEventAsync(transaction, ct);
+            await PublishEventAsync(transaction, ct);
 
             return new TransactionResponse(transaction.Id, transaction.Amount, account.Balance);
         }
@@ -145,7 +146,7 @@ public sealed class TransactionService : ITransactionService
                 SchemaVersion: 1);
 
             await _publisher.PublishAsync(
-                topic: "finance.transactions.created",
+                topic: KafkaTopics.TransactionsCreated,
                 key: transaction.AccountId.ToString(),
                 payload: @event,
                 ct: ct);

@@ -1,4 +1,5 @@
 using FinanceFlow.Application.Abstractions;
+using FinanceFlow.Application.Events;
 using FinanceFlow.Application.Interfaces;
 using FinanceFlow.Application.Services.Interfaces;
 using FinanceFlow.Domain.Entities;
@@ -89,7 +90,7 @@ public class TransferService : ITransferService
                 "Transfer committed. {TransferId} from {SourceAccountId} to {DestinationAccountId} amount {Amount}",
                 transferId, source.Id, destination.Id, request.Amount);
             
-            //await PublishEventAsync(txIn, txOut, source, destination, ct);
+            await PublishEventAsync(txIn, txOut, source, destination, ct);
 
             return new TransferResponse(transferId, source.Balance, destination.Balance);
         }
@@ -135,14 +136,16 @@ public class TransferService : ITransferService
                 SchemaVersion: 1);
 
             await _publisher.PublishAsync(
-                "finance.transactions.created",
-                source.Id.ToString(),
-                @eventOut, ct);
+                KafkaTopics.TransactionsCreated,
+                txOut.AccountId.ToString(),
+                @eventOut,
+                ct);
 
             await _publisher.PublishAsync(
-                "finance.transactions.created",
-                destination.Id.ToString(),
-                @eventIn, ct);
+                KafkaTopics.TransactionsCreated,
+                txIn.AccountId.ToString(),
+                @eventIn,
+                ct);
         }
         catch (Exception ex)
         {
