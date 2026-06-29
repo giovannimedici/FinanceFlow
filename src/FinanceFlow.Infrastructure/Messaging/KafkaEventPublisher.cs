@@ -32,6 +32,7 @@ public sealed class KafkaEventPublisher : IEventPublisher, IDisposable
     }
 
     public async Task PublishAsync<T>(
+        Guid TransactionId,
         string topic,
         string key,
         T payload,
@@ -48,7 +49,9 @@ public sealed class KafkaEventPublisher : IEventPublisher, IDisposable
         var result = await _producer.ProduceAsync(topic, message, ct);
 
         _logger.LogInformation(
-            "Event published. Topic={Topic} Partition={Partition} Offset={Offset}",
+            "Event published. AccountId={AccountId} TransactionId={TransactionId} Topic={Topic} Partition={Partition} Offset={Offset}",
+            key,
+            TransactionId,
             result.Topic,
             result.Partition.Value,
             result.Offset.Value);

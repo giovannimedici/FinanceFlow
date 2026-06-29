@@ -20,7 +20,9 @@ public class ExceptionHandlingMiddleware
         }
         catch (DomainException ex)
         {
-            _logger.LogWarning(ex, "Domain rule violation");
+            _logger.LogWarning(ex,
+                "Domain rule violation. Message={Message} Path={Path}",
+                ex.Message, context.Request.Path);
             context.Response.StatusCode = StatusCodes.Status422UnprocessableEntity;
             await context.Response.WriteAsJsonAsync(new ProblemDetails
             {
@@ -41,7 +43,9 @@ public class ExceptionHandlingMiddleware
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unhandled exception");
+            _logger.LogError(ex,
+                "Unhandled exception. Message={Message} Path={Path}",
+                ex.Message, context.Request.Path);
             context.Response.StatusCode = StatusCodes.Status500InternalServerError;
             await context.Response.WriteAsJsonAsync(new ProblemDetails
             {

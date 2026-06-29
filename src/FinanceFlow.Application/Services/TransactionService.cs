@@ -56,7 +56,7 @@ public sealed class TransactionService : ITransactionService
             await dbTx.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Deposit committed. {TransactionId} {AccountId} {Amount}",
+                "Deposit committed. TransactionId={TransactionId} AccountId={AccountId} Amount={Amount}",
                 transaction.Id, accountId, request.Amount);
 
             await PublishEventAsync(transaction, ct);
@@ -71,7 +71,9 @@ public sealed class TransactionService : ITransactionService
         catch (Exception ex)
         {
             await dbTx.RollbackAsync(ct);
-            _logger.LogError(ex, "Unexpected error during deposit for account {AccountId}", accountId);
+            _logger.LogError(ex,
+                "Unexpected error during deposit. AccountId={AccountId}",
+                accountId);
             throw;
         }
     }
@@ -100,7 +102,7 @@ public sealed class TransactionService : ITransactionService
             await dbTx.CommitAsync(ct);
 
             _logger.LogInformation(
-                "Withdrawal committed. {TransactionId} {AccountId} {Amount}",
+                "Withdrawal committed. TransactionId={TransactionId} AccountId={AccountId} Amount={Amount}",
                 transaction.Id, accountId, request.Amount);
 
             await PublishEventAsync(transaction, ct);
@@ -115,7 +117,9 @@ public sealed class TransactionService : ITransactionService
         catch (Exception ex)
         {
             await dbTx.RollbackAsync(ct);
-            _logger.LogError(ex, "Unexpected error during withdrawal for account {AccountId}", accountId);
+            _logger.LogError(ex,
+                "Unexpected error during withdrawal. AccountId={AccountId}",
+                accountId);
             throw;
         }
     }
@@ -146,19 +150,20 @@ public sealed class TransactionService : ITransactionService
                 SchemaVersion: 1);
 
             await _publisher.PublishAsync(
+                TransactionId: transaction.Id,
                 topic: KafkaTopics.TransactionsCreated,
                 key: transaction.AccountId.ToString(),
                 payload: @event,
                 ct: ct);
 
             _logger.LogInformation(
-                "Event published. {TransactionId} {AccountId}",
+                "Event published. TransactionId={TransactionId} AccountId={AccountId}",
                 transaction.Id, transaction.AccountId);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex,
-                "Failed to publish Kafka event for transaction {TransactionId}. DB commit already succeeded.",
+                "Failed to publish Kafka event. TransactionId={TransactionId}. DB commit already succeeded.",
                 transaction.Id);
         }
     }
