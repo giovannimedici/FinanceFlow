@@ -1,4 +1,5 @@
 using FinanceFlow.Application.Abstractions;
+using FinanceFlow.Application.Events;
 using FinanceFlow.Application.Interfaces;
 using FinanceFlow.Application.Services.Interfaces;
 using FinanceFlow.Domain.Entities;
@@ -86,23 +87,27 @@ public class TransferService : ITransferService
 
             await dbTransaction.CommitAsync(ct);
             _logger.LogInformation(
-                "Transfer committed. {TransferId} from {SourceAccountId} to {DestinationAccountId} amount {Amount}",
+                "Transfer committed. TransferId={TransferId} SourceAccountId={SourceAccountId} DestinationAccountId={DestinationAccountId} Amount={Amount}",
                 transferId, source.Id, destination.Id, request.Amount);
             
-            //await PublishEventAsync(txIn, txOut, source, destination, ct);
+            await PublishEventAsync(txIn, txOut, source, destination, ct);
 
             return new TransferResponse(transferId, source.Balance, destination.Balance);
         }
         catch (DomainException ex)
         {
             await dbTransaction.RollbackAsync(ct);
-            _logger.LogError("Domain exception {ex} occurred during transfer from {SourceAccountId} to {DestinationAccountId}.", ex.Message, request.SourceAccountId, request.DestinationAccountId);
+            _logger.LogError(ex,
+                "Domain exception during transfer. Message={Message} SourceAccountId={SourceAccountId} DestinationAccountId={DestinationAccountId}",
+                ex.Message, request.SourceAccountId, request.DestinationAccountId);
             throw;
         }
         catch (Exception ex)
         {
             await dbTransaction.RollbackAsync(ct);
-            _logger.LogError("An unexpected error {ex} occurred during transfer from {SourceAccountId} to {DestinationAccountId}.", ex.Message, request.SourceAccountId, request.DestinationAccountId);
+            _logger.LogError(ex,
+                "Unexpected error during transfer. Message={Message} SourceAccountId={SourceAccountId} DestinationAccountId={DestinationAccountId}",
+                ex.Message, request.SourceAccountId, request.DestinationAccountId);
             throw;
         }
 
@@ -135,19 +140,23 @@ public class TransferService : ITransferService
                 SchemaVersion: 1);
 
             await _publisher.PublishAsync(
-                "finance.transactions.created",
-                source.Id.ToString(),
-                @eventOut, ct);
+                TransactionId: txOut.Id,
+                KafkaTopics.TransactionsCreated,
+                txOut.AccountId.ToString(),
+                @eventOut,
+                ct);
 
             await _publisher.PublishAsync(
-                "finance.transactions.created",
-                destination.Id.ToString(),
-                @eventIn, ct);
+                TransactionId: txIn.Id,
+                KafkaTopics.TransactionsCreated,
+                txIn.AccountId.ToString(),
+                @eventIn,
+                ct);
         }
         catch (Exception ex)
         {
             _logger.LogWarning(ex,
-                "Failed to publish Kafka events for transfer. TransactionIds: {TxOut}, {TxIn}",
+                "Failed to publish Kafka events for transfer. TxOut={TxOut} TxIn={TxIn}",
                 txOut.Id, txIn.Id);
         }
     }

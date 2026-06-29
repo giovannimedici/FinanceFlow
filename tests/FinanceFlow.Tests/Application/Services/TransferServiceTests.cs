@@ -1,4 +1,5 @@
 using FinanceFlow.Application.Abstractions;
+using FinanceFlow.Application.Events;
 using FinanceFlow.Application.Interfaces;
 using FinanceFlow.Application.Services;
 using FinanceFlow.Domain.Entities;
@@ -24,6 +25,15 @@ public class TransferServiceTests
     public TransferServiceTests()
     {
         _unitOfWorkMock = ServiceTestHelper.CreateUnitOfWorkMock(out _dbTransactionMock);
+
+        _publisherMock
+            .Setup(p => p.PublishAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<TransactionCreatedEvent>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
 
         _sut = new TransferService(
             _transactionsMock.Object,
@@ -72,6 +82,14 @@ public class TransferServiceTests
         _accountsMock.Verify(r => r.UpdateAsync(destination, It.IsAny<CancellationToken>()), Times.Once);
         _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _dbTransactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _publisherMock.Verify(
+            p => p.PublishAsync(
+                It.IsAny<Guid>(),
+                KafkaTopics.TransactionsCreated,
+                It.IsAny<string>(),
+                It.IsAny<TransactionCreatedEvent>(),
+                It.IsAny<CancellationToken>()),
+            Times.Exactly(2));
     }
 
     [Fact]

@@ -16,18 +16,23 @@ public sealed class KafkaEventPublisher : IEventPublisher, IDisposable
     {
         _logger = logger;
 
+        var bootstrapServers = configuration["Kafka:BootstrapServers"]
+            ?? throw new InvalidOperationException(
+                "Kafka bootstrap servers not configured. Set Kafka:BootstrapServers.");
+
         var config = new ProducerConfig
         {
-            BootstrapServers                    = configuration["Kafka__BootstrapServers"],
-            Acks                                = Acks.All,
-            EnableIdempotence                   = true,
-            MaxInFlight                         = 5,
+            BootstrapServers  = bootstrapServers,
+            Acks              = Acks.All,
+            EnableIdempotence = true,
+            MaxInFlight       = 5,
         };
 
         _producer = new ProducerBuilder<string, string>(config).Build();
     }
 
     public async Task PublishAsync<T>(
+        Guid TransactionId,
         string topic,
         string key,
         T payload,
@@ -44,7 +49,9 @@ public sealed class KafkaEventPublisher : IEventPublisher, IDisposable
         var result = await _producer.ProduceAsync(topic, message, ct);
 
         _logger.LogInformation(
-            "Event published. Topic={Topic} Partition={Partition} Offset={Offset}",
+            "Event published. AccountId={AccountId} TransactionId={TransactionId} Topic={Topic} Partition={Partition} Offset={Offset}",
+            key,
+            TransactionId,
             result.Topic,
             result.Partition.Value,
             result.Offset.Value);

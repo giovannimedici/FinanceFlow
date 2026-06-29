@@ -29,6 +29,7 @@ public static class DependencyInjection
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
+        services.AddHostedService<KafkaTopicInitializer>();
 
         return services;
     }

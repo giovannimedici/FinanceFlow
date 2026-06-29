@@ -1,3 +1,5 @@
+namespace FinanceFlow.Application.Events;
+
 public record TransactionCreatedEvent(
     Guid EventId,
     DateTimeOffset OccurredAt,

@@ -1,4 +1,5 @@
 using FinanceFlow.Application.Abstractions;
+using FinanceFlow.Application.Events;
 using FinanceFlow.Application.Interfaces;
 using FinanceFlow.Application.Services;
 using FinanceFlow.Domain.Entities;
@@ -13,8 +14,8 @@ namespace FinanceFlow.Tests.Application.Services;
 
 public class TransactionServiceTests
 {
-    private const string OwnerName = "John Doe";
-    private const string DocumentNumber = "12345678900";
+    private const string _ownerName = "John Doe";
+    private const string _documentNumber = "12345678900";
 
     private readonly Mock<IAccountRepository> _accountsMock = new();
     private readonly Mock<ITransactionRepository> _transactionsMock = new();
@@ -28,6 +29,15 @@ public class TransactionServiceTests
     {
         _unitOfWorkMock = ServiceTestHelper.CreateUnitOfWorkMock(out _dbTransactionMock);
 
+        _publisherMock
+            .Setup(p => p.PublishAsync(
+                It.IsAny<Guid>(),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<TransactionCreatedEvent>(),
+                It.IsAny<CancellationToken>()))
+            .Returns(Task.CompletedTask);
+
         _sut = new TransactionService(
             _accountsMock.Object,
             _transactionsMock.Object,
@@ -39,7 +49,7 @@ public class TransactionServiceTests
     [Fact]
     public async Task DepositAsync_WhenAccountExists_UpdatesBalancePersistsTransactionAndCommits()
     {
-        var account = Account.Create(OwnerName, DocumentNumber);
+        var account = Account.Create(_ownerName, _documentNumber);
         var request = new DepositRequest(100m, "Initial deposit");
         Transaction? capturedTransaction = null;
 
@@ -69,6 +79,14 @@ public class TransactionServiceTests
         _unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         _dbTransactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
         _dbTransactionMock.Verify(t => t.RollbackAsync(It.IsAny<CancellationToken>()), Times.Never);
+        _publisherMock.Verify(
+            p => p.PublishAsync(
+                It.IsAny<Guid>(),
+                KafkaTopics.TransactionsCreated,
+                It.IsAny<string>(),
+                It.IsAny<TransactionCreatedEvent>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -92,7 +110,7 @@ public class TransactionServiceTests
     [Fact]
     public async Task DepositAsync_WhenAmountIsInvalid_RollsBackAndThrowsDomainException()
     {
-        var account = Account.Create(OwnerName, DocumentNumber);
+        var account = Account.Create(_ownerName, _documentNumber);
         var request = new DepositRequest(0m, null);
 
         _accountsMock
@@ -114,7 +132,7 @@ public class TransactionServiceTests
     [Fact]
     public async Task WithdrawAsync_WhenAccountHasSufficientBalance_UpdatesBalancePersistsTransactionAndCommits()
     {
-        var account = Account.Create(OwnerName, DocumentNumber);
+        var account = Account.Create(_ownerName, _documentNumber);
         account.Deposit(200m);
         var request = new WithdrawRequest(75m, "ATM withdrawal");
         Transaction? capturedTransaction = null;
@@ -142,6 +160,14 @@ public class TransactionServiceTests
 
         _accountsMock.Verify(r => r.UpdateAsync(account, It.IsAny<CancellationToken>()), Times.Once);
         _dbTransactionMock.Verify(t => t.CommitAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _publisherMock.Verify(
+            p => p.PublishAsync(
+                It.IsAny<Guid>(),
+                KafkaTopics.TransactionsCreated,
+                It.IsAny<string>(),
+                It.IsAny<TransactionCreatedEvent>(),
+                It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     [Fact]
@@ -163,7 +189,7 @@ public class TransactionServiceTests
     [Fact]
     public async Task WithdrawAsync_WhenBalanceIsInsufficient_RollsBackAndThrowsDomainException()
     {
-        var account = Account.Create(OwnerName, DocumentNumber);
+        var account = Account.Create(_ownerName, _documentNumber);
         account.Deposit(20m);
         var request = new WithdrawRequest(50m, null);
 
@@ -185,7 +211,7 @@ public class TransactionServiceTests
     [Fact]
     public async Task GetTransactionsByAccountIdAsync_WhenAccountExists_ReturnsMappedTransactions()
     {
-        var account = Account.Create(OwnerName, DocumentNumber);
+        var account = Account.Create(_ownerName, _documentNumber);
         var transactions = new List<Transaction>
         {
             Transaction.Create(account.Id, TransactionType.Deposit, 100m, 100m),
