@@ -30,6 +30,7 @@
     <ProjectReference Include="..\..\src\FinanceFlow.Application\FinanceFlow.Application.csproj" />
     <ProjectReference Include="..\..\src\FinanceFlow.Infrastructure\FinanceFlow.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\FinanceFlow.API\FinanceFlow.API.csproj" />
+    <ProjectReference Include="..\..\src\FinanceFlow.Workers.Audit\FinanceFlow.Workers.Audit.csproj" />
   </ItemGroup>
 
 </Project>

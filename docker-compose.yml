@@ -67,5 +67,19 @@ services:
         Kafka__BootstrapServers: kafka:9092
       restart: on-failure
 
+  audit-worker:
+    build:
+      context: .
+      dockerfile: src/FinanceFlow.Workers.Audit/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+    restart: on-failure
+
 volumes:
   postgres_data:
