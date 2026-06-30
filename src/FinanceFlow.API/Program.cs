@@ -90,6 +90,7 @@ try
 
     app.MapAccountEndpoints();
     app.MapTransactionEndpoints();
+    app.MapAuditEndpoints();
 
     Log.Information("FinanceFlow API starting");
     app.Run();
