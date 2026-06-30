@@ -1,3 +1,4 @@
+using FinanceFlow.Infrastructure.Audit;
 using Microsoft.EntityFrameworkCore;
 using Testcontainers.PostgreSql;
 

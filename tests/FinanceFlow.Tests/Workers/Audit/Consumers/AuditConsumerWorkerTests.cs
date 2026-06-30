@@ -1,8 +1,9 @@
 using System.Text.Json;
 using Confluent.Kafka;
 using FinanceFlow.Application.Events;
+using FinanceFlow.Domain.Entities;
+using FinanceFlow.Infrastructure.Audit;
 using FinanceFlow.Workers.Audit.Consumers;
-using FinanceFlow.Workers.Audit.Domain;
 using FinanceFlow.Tests.Workers.Audit.Integration;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;

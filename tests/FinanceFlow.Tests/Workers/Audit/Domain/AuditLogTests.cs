@@ -1,4 +1,4 @@
-using FinanceFlow.Workers.Audit.Domain;
+using FinanceFlow.Domain.Entities;
 using FluentAssertions;
 
 namespace FinanceFlow.Tests.Workers.Audit.Domain;

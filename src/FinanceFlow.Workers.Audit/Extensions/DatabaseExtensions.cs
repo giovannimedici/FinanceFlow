@@ -1,3 +1,5 @@
+using FinanceFlow.Infrastructure;
+using FinanceFlow.Infrastructure.Audit;
 using Microsoft.EntityFrameworkCore;
 
 namespace FinanceFlow.Workers.Audit.Extensions;

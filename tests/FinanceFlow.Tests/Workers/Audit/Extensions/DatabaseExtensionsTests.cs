@@ -1,3 +1,5 @@
+using FinanceFlow.Infrastructure;
+using FinanceFlow.Infrastructure.Audit;
 using FinanceFlow.Tests.Workers.Audit.Integration;
 using FinanceFlow.Workers.Audit.Extensions;
 using FluentAssertions;
@@ -76,8 +78,8 @@ public sealed class DatabaseExtensionsTests : IAsyncLifetime
         var builder = Host.CreateApplicationBuilder();
 
         builder.Environment.EnvironmentName = environmentName;
-        builder.Services.AddDbContext<AuditDbContext>(opt =>
-            opt.UseNpgsql(connectionString).UseSnakeCaseNamingConvention());
+        builder.Configuration["ConnectionStrings:FinanceFlow"] = connectionString;
+        builder.Services.AddAuditPersistence(builder.Configuration);
 
         return builder.Build();
     }

@@ -1,14 +1,12 @@
+using FinanceFlow.Infrastructure;
 using FinanceFlow.Workers.Audit.Consumers;
 using FinanceFlow.Workers.Audit.Extensions;
-using Microsoft.EntityFrameworkCore;
 using Serilog;
 using Serilog.Formatting.Json;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-builder.Services.AddDbContext<AuditDbContext>(opt =>
-    opt.UseNpgsql(builder.Configuration.GetConnectionString("FinanceFlow"))
-       .UseSnakeCaseNamingConvention());
+builder.Services.AddAuditPersistence(builder.Configuration);
 
 builder.Services.AddHostedService<AuditConsumerWorker>();
 

@@ -1,5 +1,6 @@
 using System.Text.Json;
-using FinanceFlow.Workers.Audit.Domain;
+using FinanceFlow.Domain.Entities;
+using FinanceFlow.Infrastructure.Audit;
 using FinanceFlow.Tests.Workers.Audit.Integration;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;

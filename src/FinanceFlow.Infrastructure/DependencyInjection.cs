@@ -1,5 +1,6 @@
 using FinanceFlow.Application.Abstractions;
 using FinanceFlow.Application.Interfaces;
+using FinanceFlow.Infrastructure.Audit.Repositories;
 using FinanceFlow.Infrastructure.Data;
 using FinanceFlow.Infrastructure.Data.Repositories;
 using FinanceFlow.Infrastructure.Messaging;
@@ -25,8 +26,11 @@ public static class DependencyInjection
             opts.UseNpgsql(connStr)
                 .UseSnakeCaseNamingConvention());
 
+        services.AddAuditPersistence(configuration);
+
         services.AddScoped<IAccountRepository, AccountRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddSingleton<IEventPublisher, KafkaEventPublisher>();
         services.AddHostedService<KafkaTopicInitializer>();
